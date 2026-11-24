@@ -1,13 +1,8 @@
 # Temporary root on a locked Samsung Galaxy S21 Ultra (SM-G998U / HZB1): a verified research map
 
-This report collects what was actually verified during an authorized security-research
-effort on a personally owned SM-G998U running firmware `G998USQSJHZB1` (Android 15,
-kernel `5.4.274-qgki-30957850-abG998USQSJHZB1`). It is written to save other researchers
-time: the goal is to separate **publicly verified facts**, **directly observed device
-evidence**, and **hypotheses that remain unproven**.
+This report records what was verified during an authorized security-research effort on a personally owned SM-G998U running firmware `G998USQSJHZB1` (Android 15, kernel `5.4.274-qgki-30957850-abG998USQSJHZB1`). It aims to save other researchers time by separating publicly verified facts, directly observed device evidence, and hypotheses that remain unproven.
 
-It does **not** provide a working exploit, a ready-to-flash artifact, or instructions to
-attack any device. Only test hardware you own or are explicitly authorized to assess.
+It does **not** provide a working exploit, a ready-to-flash artifact, or instructions to attack any device. Only test hardware you own or are explicitly authorized to assess.
 
 ## Contents
 
@@ -20,7 +15,7 @@ attack any device. Only test hardware you own or are explicitly authorized to as
 - [7. Practical lessons for another port](#7-practical-lessons-for-another-port)
 - [8. Sources](#8-sources)
 
-The evidence files in this repository are expanded versions of sections 2–5:
+The evidence files in this repository are expanded versions of sections 2-5:
 `RESEARCH-FACTS.md` (public CVE/repo verification), `HARDENING-FACTS.md` (public docs on
 Samsung/kernel hardening) and `DEVICE-EVIDENCE.md` (labelled observed facts vs inferences).
 
@@ -28,7 +23,7 @@ Samsung/kernel hardening) and `DEVICE-EVIDENCE.md` (labelled observed facts vs i
 
 ## 1. Device and threat model
 
-**Observed directly** (see `DEVICE-EVIDENCE.md`, O1–O4):
+Observed directly (see `DEVICE-EVIDENCE.md`, O1-O4):
 
 - Model `SM-G998U`, board `p3q`, build fingerprint
   `samsung/p3qsqw/p3q:15/AP3A.240905.015.A2/G998USQSJHZB1:user/release-keys`.
@@ -37,9 +32,9 @@ Samsung/kernel hardening) and `DEVICE-EVIDENCE.md` (labelled observed facts vs i
 - Shell user starts as `uid=2000(shell)`; `SELinux` was observed `Permissive` during one
   successful root session, not at every boot.
 
-**Publicly verified** firmware identifiers exist for the HZB1 build family; however the
-exact device-specific Kconfig values used here are **not** in the public record and were
-only observed through local `IKCONFIG`/`kallsyms` captures (see `HARDENING-FACTS.md`).
+Publicly verified firmware identifiers exist for the HZB1 build family. The exact
+device-specific Kconfig values used here are not in the public record and were only
+observed through local `IKCONFIG`/`kallsyms` captures (see `HARDENING-FACTS.md`).
 
 ---
 
@@ -56,18 +51,18 @@ Every item in this section is backed by a public source in `RESEARCH-FACTS.md`.
 | Copy Fail / CVE-2026-31431 | Affects 4.14–6.18.21; fix `a664bf3d603d`; public 732-byte Python PoC. Depends on `algif_aead`/`authencesn`; whether it works on this vendor kernel is **unverified**. |
 | CVE-2023-20938 / CVE-2022-20421 | Public record shows Android security-bulletin fixes; no public evidence that they remain live on this 5.4.274 build. |
 
-Important nuance: "DirtyFrag is dead on 5.4" refers to the **upstream PoC path**, which
-requires `MSG_SPLICE_PAGES`. Our successful runs used a **hardened downstream variant with
-a userspace `crash_dump64` bridge** (`splicehelper`), which is a different engineering
-path. No public fork documenting that exact combination was found, so the general claim
-and our local result are both reported separately rather than merged.
+The claim "DirtyFrag is dead on 5.4" refers to the upstream PoC path, which requires
+`MSG_SPLICE_PAGES`. Our successful runs used a hardened downstream variant with a
+userspace `crash_dump64` bridge (`splicehelper`), a different engineering path. No public
+fork documents that exact combination, so the general claim and our local result are
+reported separately.
 
 ---
 
 ## 3. Directly observed device evidence
 
-Full labelled logs are in `DEVICE-EVIDENCE.md` (O1–O28 are observations, I1–I10 are
-inferences). Highlights:
+Full labelled logs are in `DEVICE-EVIDENCE.md` (O1-O28 are observations, I1-I10 are
+inferences).
 
 - A successful run produced `uid=0(root) gid=0(root) groups=0(root)` from `su -c id`,
   with `CapEff` and `CapBnd` both `0000003fffffffff`, a live `kernelsu` module in
@@ -85,7 +80,7 @@ inferences). Highlights:
 - Build-side artifacts were verified offline: exact vermagic
   `5.4.274-qgki-30957850-abG998USQSJHZB1 SMP preempt mod_unload modversions aarch64`,
   CRC counts against the prepared `Module.symvers`, `apksigner` certificate digests, and
-  SHA-256 values. These are recorded as **offline verification**, not proof of a working
+  SHA-256 values. These are recorded as offline verification, not proof of a working
   final device setup.
 
 The log excerpts retain device paths such as `/dev/...` and `/proc/...`; these are
@@ -98,12 +93,12 @@ ports or tokens are included.
 
 Verified from public documentation in `HARDENING-FACTS.md`:
 
-- **RKP** (Samsung Real-time Kernel Protection) and **DEFEX** are documented in Knox
-  materials and independent research. RKP enforces read-only kernel text/page tables;
-  DEFEX filters execve/setuid/module loading for root contexts.
-- **CFI_CLANG** inserts forward-edge indirect-call checks; **CFI_CLANG_SHADOW** adds a
-  module lookup table. Violations panic unless `CONFIG_CFI_PERMISSIVE` is set.
-- **KASLR** makes absolute symbol addresses boot-specific; `kptr_restrict` controls
+- RKP (Samsung Real-time Kernel Protection) and DEFEX are documented in Knox materials
+  and independent research. RKP enforces read-only kernel text/page tables; DEFEX filters
+  execve/setuid/module loading for root contexts.
+- CFI_CLANG inserts forward-edge indirect-call checks; CFI_CLANG_SHADOW adds a module
+  lookup table. Violations panic unless `CONFIG_CFI_PERMISSIVE` is set.
+- KASLR makes absolute symbol addresses boot-specific; `kptr_restrict` controls
   `/proc/kallsyms` visibility. Any prelink that hardcodes addresses is valid only for the
   boot whose kallsyms was used.
 - Linux modules check `vermagic` and `MODVERSIONS` CRCs; the `SHN_ABS` symbol trick used by
@@ -113,8 +108,8 @@ Verified from public documentation in `HARDENING-FACTS.md`:
   `KSU_EXPECTED_HASH`; a mismatched manager/module pair can load a driver but never grant
   usable root.
 
-The exact HZB1 CFI/RKP configuration and manager certificate remain **device-observed
-only** and are marked `[UNVERIFIED]` in `HARDENING-FACTS.md`.
+The exact HZB1 CFI/RKP configuration and manager certificate remain device-observed only
+and are marked `[UNVERIFIED]` in `HARDENING-FACTS.md`.
 
 ---
 
@@ -138,8 +133,6 @@ differently on a late-loaded, locked device than on a boot-image install.
 
 ## 6. Hypotheses and open questions
 
-These are **not** presented as conclusions:
-
 - The exact cause of the observed reboots after certain writes remains open (confidence:
   medium that it involved kernel-text patching/CFI or a conflicting patcher; no captured
   oops).
@@ -147,7 +140,8 @@ These are **not** presented as conclusions:
   proven on-device.
 - KASLR validity of any prelinked module is a real hazard; a single reboot invalidates it.
 - The `mm == NULL → ALLOW` DEFEX hypothesis was never confirmed in dmesg.
-- A historical root result is second-hand and was not reproduced in the final stable state.
+- A historical root result is second-hand and was not reproduced in the final stable
+  state.
 
 See `DEVICE-EVIDENCE.md`, section "Inference-only claims", for the explicit list.
 
